@@ -4,9 +4,8 @@ SpartanGYM es un sistema desarrollado con arquitectura de microservicios para la
 
 ## Integrantes
 
-* Nombre integrante 1
-* Nombre integrante 2
-* Nombre integrante 3
+Francisco Osorio 
+Danilo Poblete
 
 ## Microservicios del sistema
 
