@@ -1,4 +1,4 @@
-# SpartanGYM - Sistema basado en microservicios
+# SpartanGYM 
 
 SpartanGYM es un sistema desarrollado con arquitectura de microservicios para la gestión de distintas áreas de un gimnasio. El proyecto fue construido en Java con Spring Boot, aplicando separación de responsabilidades, persistencia con JPA, endpoints REST, validaciones, manejo de errores y comunicación entre microservicios.
 
