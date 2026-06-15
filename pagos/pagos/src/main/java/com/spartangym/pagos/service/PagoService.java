@@ -54,6 +54,22 @@ public class PagoService {
         return pagoRepository.findByTipoPago(tipo);
     }
 
+    public Boolean clienteTienePlanActivo(Integer idCliente) {
+        logger.info("Validando si cliente {} tiene plan activo", idCliente);
+
+        obtenerCliente(idCliente);
+
+        boolean tienePlanActivo = existePlanActivo(idCliente);
+
+        if (tienePlanActivo) {
+            logger.info("Cliente {} tiene plan activo", idCliente);
+        } else {
+            logger.info("Cliente {} no tiene plan activo", idCliente);
+        }
+
+        return tienePlanActivo;
+    }
+
     public Pago registrarPagoPlan(PagoPlanDTO pagoPlanDTO) {
         logger.info("Iniciando registro de pago de plan {} para cliente {}",
                 pagoPlanDTO.getIdPlan(),
@@ -61,39 +77,16 @@ public class PagoService {
 
         ClienteDTO cliente = obtenerCliente(pagoPlanDTO.getIdCliente());
 
-        if (cliente == null) {
-            logger.warn("Cliente {} no encontrado", pagoPlanDTO.getIdCliente());
-            throw new RuntimeException("Cliente con id " + pagoPlanDTO.getIdCliente() + " no encontrado");
-        }
-
-        if (!"Activo".equalsIgnoreCase(cliente.getEstado())) {
-            logger.warn("Cliente {} no esta activo para contratar plan", pagoPlanDTO.getIdCliente());
-            throw new RuntimeException("El cliente no esta activo para contratar un plan");
-        }
-
-        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
-            logger.warn("Cliente {} no tiene rol CLIENTE para contratar plan", pagoPlanDTO.getIdCliente());
-            throw new RuntimeException("Solo los clientes pueden contratar planes");
-        }
+        validarClienteParaPagoPlan(cliente, pagoPlanDTO.getIdCliente());
 
         PlanDTO plan = obtenerPlan(pagoPlanDTO.getIdPlan());
 
-        if (plan == null) {
-            logger.warn("Plan {} no encontrado", pagoPlanDTO.getIdPlan());
-            throw new RuntimeException("El plan no existe");
-        }
+        validarPlan(plan, pagoPlanDTO.getIdPlan());
 
-        if (plan.getPrecio() == null || plan.getPrecio() <= 0) {
-            logger.warn("Precio no valido para plan {}", pagoPlanDTO.getIdPlan());
-            throw new RuntimeException("El precio del plan no es valido");
+        if (existePlanActivo(pagoPlanDTO.getIdCliente())) {
+            logger.warn("Cliente {} ya tiene un plan activo", pagoPlanDTO.getIdCliente());
+            throw new RuntimeException("El cliente ya tiene un plan activo");
         }
-
-        if (plan.getDuracionDias() == null || plan.getDuracionDias() <= 0) {
-            logger.warn("Duracion no valida para plan {}", pagoPlanDTO.getIdPlan());
-            throw new RuntimeException("La duracion del plan no es valida");
-        }
-
-        validarClienteSinPlanActivo(pagoPlanDTO.getIdCliente());
 
         Pago pago = new Pago();
         pago.setIdCliente(pagoPlanDTO.getIdCliente());
@@ -115,9 +108,23 @@ public class PagoService {
                 pagoProductoDTO.getIdCliente(),
                 pagoProductoDTO.getReferenciaId());
 
+        ClienteDTO cliente = obtenerCliente(pagoProductoDTO.getIdCliente());
+
+        validarClienteParaPagoProducto(cliente, pagoProductoDTO.getIdCliente());
+
         if (pagoProductoDTO.getMontoCobrado() == null || pagoProductoDTO.getMontoCobrado() <= 0) {
             logger.warn("Monto no valido para pago de producto");
             throw new RuntimeException("El monto cobrado debe ser mayor a 0");
+        }
+
+        if (pagoProductoDTO.getReferenciaId() == null || pagoProductoDTO.getReferenciaId() <= 0) {
+            logger.warn("Referencia no valida para pago de producto");
+            throw new RuntimeException("La referencia de venta debe ser mayor a 0");
+        }
+
+        if (pagoRepository.existsByTipoPagoAndReferenciaId(TipoPago.PRODUCTO, pagoProductoDTO.getReferenciaId())) {
+            logger.warn("La venta {} ya tiene un pago registrado", pagoProductoDTO.getReferenciaId());
+            throw new RuntimeException("La venta ya tiene un pago registrado");
         }
 
         Pago pago = new Pago();
@@ -154,6 +161,35 @@ public class PagoService {
         return pagoGuardado;
     }
 
+    public Pago cancelarPorTipoYReferencia(String tipoPago, Integer referenciaId) {
+        logger.info("Iniciando cancelacion de pago por tipo {} y referencia {}",
+                tipoPago,
+                referenciaId);
+
+        TipoPago tipo = convertirTipoPago(tipoPago);
+
+        Pago pago = pagoRepository.findByTipoPagoAndReferenciaId(tipo, referenciaId)
+                .orElseThrow(() -> {
+                    logger.warn("Pago asociado no encontrado para tipo {} y referencia {}",
+                            tipoPago,
+                            referenciaId);
+                    return new RuntimeException("Pago asociado no encontrado");
+                });
+
+        if (pago.getEstado() == EstadoPago.CANCELADO) {
+            logger.warn("El pago asociado ya se encuentra cancelado");
+            throw new RuntimeException("El pago ya se encuentra cancelado");
+        }
+
+        pago.setEstado(EstadoPago.CANCELADO);
+
+        Pago pagoGuardado = pagoRepository.save(pago);
+
+        logger.info("Pago asociado cancelado correctamente con id {}", pagoGuardado.getIdPago());
+
+        return pagoGuardado;
+    }
+
     public void eliminar(Integer id) {
         logger.info("Iniciando eliminacion de pago con id {}", id);
 
@@ -163,8 +199,8 @@ public class PagoService {
         logger.info("Pago eliminado correctamente con id {}", id);
     }
 
-    private void validarClienteSinPlanActivo(Integer idCliente) {
-        logger.info("Validando si cliente {} ya tiene un plan activo", idCliente);
+    private boolean existePlanActivo(Integer idCliente) {
+        logger.info("Consultando pagos de plan activos del cliente {}", idCliente);
 
         List<Pago> pagosPlanPagados = pagoRepository.findByIdClienteAndTipoPagoAndEstado(
                 idCliente,
@@ -177,22 +213,67 @@ public class PagoService {
         for (Pago pagoPlan : pagosPlanPagados) {
             PlanDTO planContratado = obtenerPlan(pagoPlan.getReferenciaId());
 
-            if (planContratado == null) {
-                logger.warn("Plan {} no encontrado al validar plan activo", pagoPlan.getReferenciaId());
-                throw new RuntimeException("El plan no existe");
-            }
-
-            if (planContratado.getDuracionDias() == null || planContratado.getDuracionDias() <= 0) {
-                logger.warn("Duracion no valida para plan {}", pagoPlan.getReferenciaId());
-                throw new RuntimeException("La duracion del plan no es valida");
-            }
+            validarPlan(planContratado, pagoPlan.getReferenciaId());
 
             LocalDateTime fechaTerminoPlan = pagoPlan.getFechaPago().plusDays(planContratado.getDuracionDias());
 
             if (fechaTerminoPlan.isAfter(ahora)) {
-                logger.warn("Cliente {} ya tiene un plan activo hasta {}", idCliente, fechaTerminoPlan);
-                throw new RuntimeException("El cliente ya tiene un plan activo");
+                logger.info("Cliente {} tiene plan activo hasta {}", idCliente, fechaTerminoPlan);
+                return true;
             }
+        }
+
+        return false;
+    }
+
+    private void validarClienteParaPagoPlan(ClienteDTO cliente, Integer idCliente) {
+        if (cliente == null) {
+            logger.warn("Cliente {} no encontrado", idCliente);
+            throw new RuntimeException("Cliente con id " + idCliente + " no encontrado");
+        }
+
+        if (!"Activo".equalsIgnoreCase(cliente.getEstado())) {
+            logger.warn("Cliente {} no esta activo para contratar plan", idCliente);
+            throw new RuntimeException("El cliente no esta activo para contratar un plan");
+        }
+
+        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
+            logger.warn("Cliente {} no tiene rol CLIENTE para contratar plan", idCliente);
+            throw new RuntimeException("Solo los clientes pueden contratar planes");
+        }
+    }
+
+    private void validarClienteParaPagoProducto(ClienteDTO cliente, Integer idCliente) {
+        if (cliente == null) {
+            logger.warn("Cliente {} no encontrado", idCliente);
+            throw new RuntimeException("Cliente con id " + idCliente + " no encontrado");
+        }
+
+        if (!"Activo".equalsIgnoreCase(cliente.getEstado())) {
+            logger.warn("Cliente {} no esta activo para pagar producto", idCliente);
+            throw new RuntimeException("El cliente no esta activo para registrar pago de producto");
+        }
+
+        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
+            logger.warn("Cliente {} no tiene rol CLIENTE para pagar producto", idCliente);
+            throw new RuntimeException("Solo los clientes pueden registrar pagos de producto");
+        }
+    }
+
+    private void validarPlan(PlanDTO plan, Integer idPlan) {
+        if (plan == null) {
+            logger.warn("Plan {} no encontrado", idPlan);
+            throw new RuntimeException("Plan con id " + idPlan + " no encontrado");
+        }
+
+        if (plan.getPrecio() == null || plan.getPrecio() <= 0) {
+            logger.warn("Precio no valido para plan {}", idPlan);
+            throw new RuntimeException("El precio del plan no es valido");
+        }
+
+        if (plan.getDuracionDias() == null || plan.getDuracionDias() <= 0) {
+            logger.warn("Duracion no valida para plan {}", idPlan);
+            throw new RuntimeException("La duracion del plan no es valida");
         }
     }
 

@@ -6,6 +6,7 @@ import com.spartangym.pagos.model.TipoPago;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PagoRepository extends JpaRepository<Pago, Integer> {
 
@@ -17,5 +18,15 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
             Integer idCliente,
             TipoPago tipoPago,
             EstadoPago estado
+    );
+
+    Optional<Pago> findByTipoPagoAndReferenciaId(
+            TipoPago tipoPago,
+            Integer referenciaId
+    );
+
+    boolean existsByTipoPagoAndReferenciaId(
+            TipoPago tipoPago,
+            Integer referenciaId
     );
 }

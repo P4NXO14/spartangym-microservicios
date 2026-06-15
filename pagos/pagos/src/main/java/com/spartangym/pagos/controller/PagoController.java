@@ -33,6 +33,11 @@ public class PagoController {
         return ResponseEntity.ok(pagoService.listarPorCliente(idCliente));
     }
 
+    @GetMapping("/cliente/{idCliente}/plan-activo")
+    public ResponseEntity<Boolean> clienteTienePlanActivo(@PathVariable Integer idCliente) {
+        return ResponseEntity.ok(pagoService.clienteTienePlanActivo(idCliente));
+    }
+
     @GetMapping("/tipo/{tipoPago}")
     public ResponseEntity<List<Pago>> listarPorTipo(@PathVariable String tipoPago) {
         return ResponseEntity.ok(pagoService.listarPorTipo(tipoPago));
@@ -53,6 +58,14 @@ public class PagoController {
     @PutMapping("/cancelar/{id}")
     public ResponseEntity<Pago> cancelar(@PathVariable Integer id) {
         return ResponseEntity.ok(pagoService.cancelarPago(id));
+    }
+
+    @PutMapping("/cancelar/tipo/{tipoPago}/referencia/{referenciaId}")
+    public ResponseEntity<Pago> cancelarPorTipoYReferencia(
+            @PathVariable String tipoPago,
+            @PathVariable Integer referenciaId) {
+
+        return ResponseEntity.ok(pagoService.cancelarPorTipoYReferencia(tipoPago, referenciaId));
     }
 
     @DeleteMapping("/{id}")
