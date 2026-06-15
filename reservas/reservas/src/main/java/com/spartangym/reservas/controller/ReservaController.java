@@ -21,17 +21,22 @@ public class ReservaController {
         return ResponseEntity.ok(reservaService.listaReservas());
     }
 
+    @GetMapping("/{idReserva}")
+    public ResponseEntity<Reserva> buscarPorId(@PathVariable Integer idReserva) {
+        return ResponseEntity.ok(reservaService.buscarPorId(idReserva));
+    }
+
     @PostMapping("/crear")
     public ResponseEntity<Reserva> crearReserva(
             @RequestParam Integer clienteId,
             @RequestParam Integer claseId) {
-        
+
         Reserva reserva = reservaService.generarReserva(clienteId, claseId);
         return ResponseEntity.status(201).body(reserva);
     }
 
     @PutMapping("/cancelar/{idReserva}")
-    public ResponseEntity<Reserva> cancelarReserva(@PathVariable Integer idReserva){
+    public ResponseEntity<Reserva> cancelarReserva(@PathVariable Integer idReserva) {
         Reserva reservaCancelada = reservaService.cancelarReserva(idReserva);
         return ResponseEntity.ok(reservaCancelada);
     }
@@ -41,5 +46,4 @@ public class ReservaController {
         reservaService.eliminarReserva(idReserva);
         return ResponseEntity.noContent().build();
     }
-
 }

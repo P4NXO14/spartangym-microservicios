@@ -35,7 +35,7 @@ public class ManejadorErrores {
     @ExceptionHandler(ResourceAccessException.class)
     public ResponseEntity<ErrorDTO> handleServicioNoDisponible(ResourceAccessException ex) {
         return ResponseEntity.status(503)
-                .body(new ErrorDTO("servicio", "El microservicio de clientes no esta disponible."));
+                .body(new ErrorDTO("servicio", "Un microservicio requerido no se encuentra disponible."));
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -52,6 +52,7 @@ public class ManejadorErrores {
         }
 
         if (mensaje.contains("microservicio de clientes") ||
+                mensaje.contains("microservicio de pagos") ||
                 mensaje.contains("no se encuentra disponible") ||
                 mensaje.contains("no esta disponible")) {
 

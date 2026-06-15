@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -34,30 +35,11 @@ public class ReservaService {
     public Reserva generarReserva(Integer clienteId, Integer claseId) {
         logger.info("Iniciando reserva para cliente {} y clase {}", clienteId, claseId);
 
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:8080/api/clientes/" + clienteId;
+        ClienteDTO cliente = obtenerCliente(clienteId);
 
-        ClienteDTO cliente;
-        try {
-            cliente = restTemplate.getForObject(url, ClienteDTO.class);
-            logger.info("Cliente {} consultado correctamente desde ms-clientes", clienteId);
-        } catch (HttpStatusCodeException e) {
-            logger.warn("Error al consultar cliente {} en ms-clientes", clienteId);
-            throw new RuntimeException("Cliente con id " + clienteId + " no encontrado");
-        } catch (Exception e) {
-            logger.error("El microservicio de clientes no se encuentra disponible para cliente {}", clienteId);
-            throw new RuntimeException("El microservicio de clientes no se encuentra disponible");
-        }
+        validarClienteParaReserva(cliente, clienteId);
 
-        if (cliente == null || !"Activo".equalsIgnoreCase(cliente.getEstado())) {
-            logger.warn("Cliente {} no esta activo para poder realizar reservas", clienteId);
-            throw new RuntimeException("El cliente no esta activo para poder realizar reservas");
-        }
-
-        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
-            logger.warn("Cliente {} no tiene rol CLIENTE para realizar reservas", clienteId);
-            throw new RuntimeException("Solo los clientes pueden realizar reservas");
-        }
+        validarClienteConPlanActivo(clienteId);
 
         if (reservaRepository.existsByClienteIdAndClase_IdClaseAndEstado(clienteId, claseId, "CONFIRMADA")) {
             logger.warn("Cliente {} ya tiene una reserva confirmada para clase {}", clienteId, claseId);
@@ -81,14 +63,20 @@ public class ReservaService {
         return reservaGuardada;
     }
 
-    public Reserva cancelarReserva(Integer idReserva) {
-        logger.info("Iniciando cancelacion de reserva {}", idReserva);
+    public Reserva buscarPorId(Integer idReserva) {
+        logger.info("Buscando reserva con id {}", idReserva);
 
-        Reserva reserva = reservaRepository.findById(idReserva)
+        return reservaRepository.findById(idReserva)
                 .orElseThrow(() -> {
                     logger.warn("Reserva {} no encontrada", idReserva);
                     return new RuntimeException("Reserva no encontrada");
                 });
+    }
+
+    public Reserva cancelarReserva(Integer idReserva) {
+        logger.info("Iniciando cancelacion de reserva {}", idReserva);
+
+        Reserva reserva = buscarPorId(idReserva);
 
         if ("CANCELADA".equalsIgnoreCase(reserva.getEstado())) {
             logger.warn("Reserva {} ya esta cancelada", idReserva);
@@ -117,11 +105,7 @@ public class ReservaService {
     public void eliminarReserva(Integer idReserva) {
         logger.info("Iniciando eliminacion de reserva {}", idReserva);
 
-        Reserva reserva = reservaRepository.findById(idReserva)
-                .orElseThrow(() -> {
-                    logger.warn("Reserva {} no encontrada", idReserva);
-                    return new RuntimeException("Reserva no encontrada");
-                });
+        Reserva reserva = buscarPorId(idReserva);
 
         if ("CONFIRMADA".equalsIgnoreCase(reserva.getEstado())) {
             Clase clase = reserva.getClase();
@@ -136,5 +120,79 @@ public class ReservaService {
         reservaRepository.delete(reserva);
 
         logger.info("Reserva eliminada correctamente con id {}", idReserva);
+    }
+
+    private ClienteDTO obtenerCliente(Integer clienteId) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://localhost:8080/api/clientes/" + clienteId;
+
+        try {
+            logger.info("Consultando cliente {} desde ms-clientes", clienteId);
+            ClienteDTO cliente = restTemplate.getForObject(url, ClienteDTO.class);
+            logger.info("Cliente {} consultado correctamente desde ms-clientes", clienteId);
+            return cliente;
+
+        } catch (HttpStatusCodeException e) {
+            logger.warn("Cliente {} no encontrado en ms-clientes", clienteId);
+            throw new RuntimeException("Cliente con id " + clienteId + " no encontrado");
+
+        } catch (ResourceAccessException e) {
+            logger.error("El microservicio de clientes no se encuentra disponible para cliente {}", clienteId);
+            throw new RuntimeException("El microservicio de clientes no se encuentra disponible");
+
+        } catch (Exception e) {
+            logger.error("Error al consultar cliente {} desde ms-clientes", clienteId);
+            throw new RuntimeException("Error al consultar el cliente");
+        }
+    }
+
+    private void validarClienteParaReserva(ClienteDTO cliente, Integer clienteId) {
+        if (cliente == null) {
+            logger.warn("Cliente {} no encontrado", clienteId);
+            throw new RuntimeException("Cliente con id " + clienteId + " no encontrado");
+        }
+
+        if (!"Activo".equalsIgnoreCase(cliente.getEstado())) {
+            logger.warn("Cliente {} no esta activo para poder realizar reservas", clienteId);
+            throw new RuntimeException("El cliente no esta activo para poder realizar reservas");
+        }
+
+        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
+            logger.warn("Cliente {} no tiene rol CLIENTE para realizar reservas", clienteId);
+            throw new RuntimeException("Solo los clientes pueden realizar reservas");
+        }
+    }
+
+    private void validarClienteConPlanActivo(Integer clienteId) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://localhost:8086/api/pagos/cliente/" + clienteId + "/plan-activo";
+
+        try {
+            logger.info("Consultando plan activo del cliente {} desde ms-pagos", clienteId);
+
+            Boolean tienePlanActivo = restTemplate.getForObject(url, Boolean.class);
+
+            if (tienePlanActivo == null || !tienePlanActivo) {
+                logger.warn("Cliente {} no tiene plan activo para realizar reservas", clienteId);
+                throw new RuntimeException("El cliente no tiene un plan activo para realizar reservas");
+            }
+
+            logger.info("Cliente {} tiene plan activo para realizar reservas", clienteId);
+
+        } catch (HttpStatusCodeException e) {
+            logger.warn("No se pudo validar plan activo del cliente {} en ms-pagos", clienteId);
+            throw new RuntimeException("No se pudo validar el plan activo del cliente");
+
+        } catch (ResourceAccessException e) {
+            logger.error("El microservicio de pagos no se encuentra disponible para validar plan activo");
+            throw new RuntimeException("El microservicio de pagos no se encuentra disponible");
+
+        } catch (RuntimeException e) {
+            throw e;
+
+        } catch (Exception e) {
+            logger.error("Error al validar plan activo del cliente {}", clienteId);
+            throw new RuntimeException("Error al validar el plan activo del cliente");
+        }
     }
 }
