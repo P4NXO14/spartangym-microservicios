@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +32,12 @@ public class ManejadorErrores {
                 .body(new ErrorDTO("base de datos", "El registro ya existe en la base de datos"));
     }
 
+    @ExceptionHandler(ResourceAccessException.class)
+    public ResponseEntity<ErrorDTO> handleServicioNoDisponible(ResourceAccessException ex) {
+        return ResponseEntity.status(503)
+                .body(new ErrorDTO("servicio", "Un microservicio requerido no se encuentra disponible"));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorDTO> handleRuntime(RuntimeException ex) {
 
@@ -45,6 +52,7 @@ public class ManejadorErrores {
         }
 
         if (mensaje.contains("microservicio de pagos") ||
+                mensaje.contains("microservicio de clientes") ||
                 mensaje.contains("no se encuentra disponible") ||
                 mensaje.contains("no esta disponible")) {
 

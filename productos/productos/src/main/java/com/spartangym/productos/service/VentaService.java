@@ -1,5 +1,6 @@
 package com.spartangym.productos.service;
 
+import com.spartangym.productos.dto.ClienteDTO;
 import com.spartangym.productos.dto.PagoProductoDTO;
 import com.spartangym.productos.dto.VentaDTO;
 import com.spartangym.productos.model.EstadoVenta;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
@@ -59,6 +61,10 @@ public class VentaService {
         logger.info("Iniciando venta de producto {} para cliente {}",
                 idProducto,
                 ventaDTO.getIdCliente());
+
+        ClienteDTO cliente = obtenerCliente(ventaDTO.getIdCliente());
+
+        validarClienteParaVenta(cliente, ventaDTO.getIdCliente());
 
         Producto producto = productoRepository.findById(idProducto)
                 .orElseThrow(() -> {
@@ -117,6 +123,8 @@ public class VentaService {
 
         Venta ventaGuardada = ventaRepository.save(venta);
 
+        cancelarPagoProducto(ventaGuardada.getIdVenta());
+
         logger.info("Venta {} cancelada correctamente. Stock devuelto al producto {}. Stock actual: {}",
                 ventaGuardada.getIdVenta(),
                 producto.getIdProducto(),
@@ -132,6 +140,45 @@ public class VentaService {
         ventaRepository.delete(venta);
 
         logger.info("Venta eliminada correctamente con id {}", id);
+    }
+
+    private ClienteDTO obtenerCliente(Integer idCliente) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://localhost:8080/api/clientes/" + idCliente;
+
+        try {
+            logger.info("Consultando cliente {} desde ms-clientes", idCliente);
+            return restTemplate.getForObject(url, ClienteDTO.class);
+
+        } catch (HttpStatusCodeException e) {
+            logger.warn("Cliente {} no encontrado en ms-clientes", idCliente);
+            throw new RuntimeException("Cliente con id " + idCliente + " no encontrado");
+
+        } catch (ResourceAccessException e) {
+            logger.error("El microservicio de clientes no se encuentra disponible");
+            throw new RuntimeException("El microservicio de clientes no se encuentra disponible");
+
+        } catch (Exception e) {
+            logger.error("Error al consultar el cliente {}", idCliente);
+            throw new RuntimeException("Error al consultar el cliente");
+        }
+    }
+
+    private void validarClienteParaVenta(ClienteDTO cliente, Integer idCliente) {
+        if (cliente == null) {
+            logger.warn("Cliente {} no encontrado", idCliente);
+            throw new RuntimeException("Cliente con id " + idCliente + " no encontrado");
+        }
+
+        if (!"Activo".equalsIgnoreCase(cliente.getEstado())) {
+            logger.warn("Cliente {} no esta activo para realizar compras", idCliente);
+            throw new RuntimeException("El cliente no esta activo para realizar compras");
+        }
+
+        if (!"CLIENTE".equalsIgnoreCase(cliente.getRol())) {
+            logger.warn("Cliente {} no tiene rol CLIENTE para realizar compras", idCliente);
+            throw new RuntimeException("Solo los clientes pueden realizar compras");
+        }
     }
 
     private void registrarPagoProducto(Venta venta) {
@@ -152,6 +199,10 @@ public class VentaService {
             logger.info("Pago de producto enviado correctamente a ms-pagos para venta {}",
                     venta.getIdVenta());
 
+        } catch (HttpStatusCodeException e) {
+            logger.error("ms-pagos rechazo el pago de producto para venta {}", venta.getIdVenta());
+            throw new RuntimeException("Error al registrar el pago del producto");
+
         } catch (ResourceAccessException e) {
             logger.error("El microservicio de pagos no se encuentra disponible para venta {}",
                     venta.getIdVenta());
@@ -163,6 +214,31 @@ public class VentaService {
                     venta.getIdVenta());
 
             throw new RuntimeException("Error al registrar el pago del producto");
+        }
+    }
+
+    private void cancelarPagoProducto(Integer idVenta) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://localhost:8086/api/pagos/cancelar/tipo/PRODUCTO/referencia/" + idVenta;
+
+        logger.info("Solicitando cancelacion de pago asociado a venta {}", idVenta);
+
+        try {
+            restTemplate.put(url, null);
+
+            logger.info("Pago asociado a venta {} cancelado correctamente en ms-pagos", idVenta);
+
+        } catch (HttpStatusCodeException e) {
+            logger.error("ms-pagos rechazo la cancelacion del pago asociado a venta {}", idVenta);
+            throw new RuntimeException("Error al cancelar el pago del producto");
+
+        } catch (ResourceAccessException e) {
+            logger.error("El microservicio de pagos no se encuentra disponible para cancelar venta {}", idVenta);
+            throw new RuntimeException("El microservicio de pagos no se encuentra disponible");
+
+        } catch (Exception e) {
+            logger.error("Error al cancelar pago del producto para venta {}", idVenta);
+            throw new RuntimeException("Error al cancelar el pago del producto");
         }
     }
 }
