@@ -48,6 +48,9 @@ El sistema está compuesto por los siguientes microservicios:
 * RestTemplate para comunicación entre microservicios
 * Postman para pruebas REST
 * GitHub para control de versiones
+* Spring Cloud Netflix Eureka (Service Discovery)
+* Springdoc OpenAPI (Swagger UI)
+* JUnit 5, MockMvc y Mockito
 
 ## Estructura general
 
@@ -59,6 +62,7 @@ Cada microservicio mantiene una estructura organizada por capas, siguiendo el pa
 * **Model**: define las entidades principales del microservicio.
 * **DTO**: permite transportar datos entre capas o entre microservicios cuando corresponde.
 * **Exception / Handler**: centraliza el manejo de errores y respuestas controladas.
+* **Swagger / Config**: clases de configuración para la documentación interactiva autogenerada.
 
 ## Funcionalidades principales
 
@@ -84,6 +88,14 @@ El sistema utiliza RestTemplate para consumir endpoints entre microservicios, si
 * **asistencia** consulta información de **clientes**.
 * **productos** se comunica con **pagos** al generar ventas.
 * **planes** se comunica con **pagos** al registrar pagos asociados a planes.
+* El ecosistema cuenta con **Spring Cloud Netflix Eureka** como servidor de descubrimiento, permitiendo que cada microservicio se registre dinámicamente en la red.
+  
+
+## Documentación de la API (Swagger)
+
+Cada microservicio cuenta con su propia documentación interactiva de la API implementada con OpenAPI 3. Una vez que un microservicio está en ejecución, se puede acceder a su interfaz gráfica (Swagger UI) para probar los endpoints directamente ingresando a:
+
+`http://localhost:<PUERTO_DEL_MICROSERVICIO>/swagger-ui/index.html`
 
 ## Requisitos para ejecutar
 
