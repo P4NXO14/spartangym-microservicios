@@ -1,17 +1,17 @@
-# SpartanGYM 
+# SpartanGYM
 
-SpartanGYM es un sistema desarrollado con arquitectura de microservicios para la gestión de distintas áreas de un gimnasio. El proyecto fue construido en Java con Spring Boot, aplicando separación de responsabilidades, persistencia con JPA, endpoints REST, validaciones, manejo de errores y comunicación entre microservicios.
+SpartanGYM es un sistema desarrollado con arquitectura de microservicios para la gestion de distintas areas de un gimnasio. El proyecto fue construido en Java con Spring Boot, aplicando separacion de responsabilidades, persistencia con JPA, endpoints REST, validaciones, manejo de errores y comunicacion entre microservicios.
 
 ## Integrantes
 
-Francisco Osorio 
+Francisco Osorio
 Danilo Poblete
 
 ## Microservicios del sistema
 
-El sistema está compuesto por los siguientes microservicios:
+El sistema esta compuesto por los siguientes microservicios:
 
-* **clientes**: gestiona la información de los clientes registrados en el sistema.
+* **clientes**: gestiona la informacion de los clientes registrados en el sistema.
 * **reservas**: administra las reservas de clases realizadas por los clientes.
 * **asistencia**: registra y controla la asistencia de los clientes.
 * **logros**: gestiona los logros obtenidos por los clientes.
@@ -21,21 +21,30 @@ El sistema está compuesto por los siguientes microservicios:
 * **planes**: gestiona los planes disponibles y contratados por los clientes.
 * **rutinas**: administra las rutinas de entrenamiento.
 
+## Componentes de infraestructura
+
+Ademas de los microservicios de negocio, el proyecto cuenta con los siguientes componentes:
+
+* **eureka-server**: permite el registro y descubrimiento dinamico de los microservicios.
+* **api-gateway**: centraliza el acceso a los endpoints de los microservicios mediante un unico punto de entrada.
+
 ## Puertos utilizados
 
-| Microservicio  | Puerto |
-| -------------- | -----: |
-| clientes       |   8080 |
-| reservas       |   8081 |
-| asistencia     |   8082 |
-| logros         |   8083 |
-| notificaciones |   8084 |
-| productos      |   8085 |
-| pagos          |   8086 |
-| planes         |   8087 |
-| rutinas        |   8088 |
+| Componente / Microservicio | Puerto |
+| -------------------------- | ------ |
+| Eureka Server              | 8761   |
+| API Gateway                | 8090   |
+| clientes                   | 8080   |
+| reservas                   | 8081   |
+| asistencia                 | 8082   |
+| logros                     | 8083   |
+| notificaciones             | 8084   |
+| productos                  | 8085   |
+| pagos                      | 8086   |
+| planes                     | 8087   |
+| rutinas                    | 8088   |
 
-## Tecnologías utilizadas
+## Tecnologias utilizadas
 
 * Java 21
 * Spring Boot
@@ -45,83 +54,130 @@ El sistema está compuesto por los siguientes microservicios:
 * Maven
 * Bean Validation
 * SLF4J para logs
-* RestTemplate para comunicación entre microservicios
+* RestTemplate para comunicacion entre microservicios cuando corresponde
 * Postman para pruebas REST
 * GitHub para control de versiones
-* Spring Cloud Netflix Eureka (Service Discovery)
+* Spring Cloud Netflix Eureka
+* Spring Cloud Gateway
 * Springdoc OpenAPI (Swagger UI)
 * JUnit 5, MockMvc y Mockito
 
 ## Estructura general
 
-Cada microservicio mantiene una estructura organizada por capas, siguiendo el patrón CSR:
+Cada microservicio mantiene una estructura organizada por capas, siguiendo el patron CSR:
 
 * **Controller**: expone los endpoints REST.
-* **Service**: contiene la lógica de negocio.
+* **Service**: contiene la logica de negocio.
 * **Repository**: permite el acceso a datos mediante JpaRepository.
 * **Model**: define las entidades principales del microservicio.
 * **DTO**: permite transportar datos entre capas o entre microservicios cuando corresponde.
 * **Exception / Handler**: centraliza el manejo de errores y respuestas controladas.
-* **Swagger / Config**: clases de configuración para la documentación interactiva autogenerada.
+* **Swagger / Config**: clases de configuracion para la documentacion interactiva autogenerada.
 
 ## Funcionalidades principales
 
-El proyecto permite realizar operaciones CRUD en los distintos microservicios, aplicar validaciones sobre los datos recibidos, controlar errores mediante respuestas HTTP adecuadas y registrar eventos importantes mediante logs. Además, algunos microservicios se comunican entre sí para validar información o completar procesos del sistema.
+El proyecto permite realizar operaciones CRUD en los distintos microservicios, aplicar validaciones sobre los datos recibidos, controlar errores mediante respuestas HTTP adecuadas y registrar eventos importantes mediante logs. Ademas, algunos microservicios se comunican entre si para validar informacion o completar procesos del sistema.
 
 Entre los flujos principales se encuentran:
 
-* Registro y administración de clientes.
-* Gestión de reservas de clases.
+* Registro y administracion de clientes.
+* Gestion de reservas de clases.
 * Control de asistencia.
-* Administración de planes.
-* Gestión de productos y ventas.
+* Administracion de planes.
+* Gestion de productos y ventas.
 * Registro de pagos de planes y productos.
-* Administración de rutinas.
+* Administracion de rutinas.
 * Registro de logros.
-* Gestión de notificaciones.
+* Gestion de notificaciones.
 
-## Comunicación entre microservicios
+## Comunicacion entre microservicios
 
-El sistema utiliza RestTemplate para consumir endpoints entre microservicios, siguiendo lo trabajado en clases. Algunas comunicaciones importantes son:
+El sistema utiliza RestTemplate cuando un microservicio requiere consultar o enviar informacion a otro servicio, siguiendo lo trabajado en clases. Algunas comunicaciones importantes son:
 
-* **reservas** consulta información de **clientes**.
-* **asistencia** consulta información de **clientes**.
+* **reservas** consulta informacion de **clientes**.
+* **asistencia** consulta informacion de **clientes**.
 * **productos** se comunica con **pagos** al generar ventas.
 * **planes** se comunica con **pagos** al registrar pagos asociados a planes.
-* El ecosistema cuenta con **Spring Cloud Netflix Eureka** como servidor de descubrimiento, permitiendo que cada microservicio se registre dinámicamente en la red.
-  
+* Todos los microservicios se registran en **Spring Cloud Netflix Eureka**, permitiendo su descubrimiento dentro de la arquitectura.
+* **API Gateway** centraliza el acceso externo a los endpoints mediante el puerto `8090`.
 
-## Documentación de la API (Swagger)
+## Documentacion de la API
 
-Cada microservicio cuenta con su propia documentación interactiva de la API implementada con OpenAPI 3. Una vez que un microservicio está en ejecución, se puede acceder a su interfaz gráfica (Swagger UI) para probar los endpoints directamente ingresando a:
+Cada microservicio cuenta con su propia documentacion interactiva de la API implementada con OpenAPI 3.
 
-`http://localhost:<PUERTO_DEL_MICROSERVICIO>/swagger-ui/index.html`
+Una vez que un microservicio esta en ejecucion, se puede acceder a Swagger UI mediante:
+
+```text
+http://localhost:<PUERTO_DEL_MICROSERVICIO>/swagger-ui/index.html
+```
+
+Ejemplo para clientes:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
 
 ## Requisitos para ejecutar
 
 Antes de ejecutar los microservicios, se debe contar con:
 
 * Java 21 instalado.
-* MySQL instalado y en ejecución.
+* MySQL instalado y en ejecucion.
 * Maven configurado.
-* Bases de datos creadas para cada microservicio según su archivo `application.properties`.
+* Bases de datos creadas para cada microservicio segun su archivo `application.properties`.
 
-## Ejecución del proyecto
+## Ejecucion del proyecto
 
-Para ejecutar cada microservicio, se debe ingresar a la carpeta correspondiente y utilizar Maven:
+Para ejecutar el proyecto se recomienda seguir el siguiente orden:
+
+1. Iniciar **Eureka Server** en el puerto `8761`.
+2. Iniciar **API Gateway** en el puerto `8090`.
+3. Iniciar los microservicios de negocio:
+
+   * clientes
+   * reservas
+   * asistencia
+   * logros
+   * notificaciones
+   * productos
+   * pagos
+   * planes
+   * rutinas
+4. Verificar el registro de los servicios en Eureka:
+
+```text
+http://localhost:8761
+```
+
+5. Probar los endpoints mediante API Gateway:
+
+```text
+http://localhost:8090
+```
+
+Cada proyecto puede ejecutarse desde su carpeta utilizando:
 
 ```bash
 mvn spring-boot:run
 ```
 
-También se puede ejecutar cada microservicio desde el IDE utilizando la clase principal de Spring Boot.
-
-Se recomienda iniciar primero los microservicios que son consultados por otros servicios, como **clientes** y **pagos**, y luego ejecutar los demás microservicios según el flujo que se desee probar.
+Tambien es posible ejecutar cada microservicio desde el IDE mediante su clase principal de Spring Boot.
 
 ## Pruebas
 
-Las pruebas de los endpoints REST fueron realizadas utilizando Postman, verificando operaciones de creación, consulta, actualización, eliminación, validaciones, manejo de errores y comunicación entre microservicios.
+Las pruebas de los endpoints REST fueron realizadas utilizando Postman, verificando operaciones de creacion, consulta, actualizacion, eliminacion, validaciones, manejo de errores y comunicacion entre microservicios.
+
+Tambien se implementaron pruebas unitarias utilizando JUnit 5, MockMvc y Mockito.
+
+Se verificaron respuestas HTTP controladas como:
+
+* `200 OK`
+* `201 Created`
+* `204 No Content`
+* `400 Bad Request`
+* `404 Not Found`
+* `503 Service Unavailable`
 
 ## Control de versiones
 
-El proyecto fue subido a GitHub con commits separados y descriptivos para evidenciar el avance del desarrollo y la participación de los integrantes del equipo.
+El proyecto fue subido a GitHub con commits separados y descriptivos para evidenciar el avance del desarrollo y la participacion de los integrantes del equipo.
