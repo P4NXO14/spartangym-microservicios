@@ -52,7 +52,7 @@ public class ReservaControllerTest {
         // Simulamos lo que haria el service
         when(service.generarReserva(10, 1)).thenReturn(reservaCreada);
 
-        mockMvc.perform(post("/api/reservas")
+        mockMvc.perform(post("/api/reservas/crear")
                         .param("clienteId", "10") // los parametros van en la query, no en el body
                         .param("claseId", "1"))
                 .andExpect(status().isCreated()); // validamos respuesta 201
@@ -75,7 +75,7 @@ public class ReservaControllerTest {
     @Test
     void eliminarReserva() throws Exception {
 
-        mockMvc.perform(delete("/api/reservas/{id}", 1))
+        mockMvc.perform(delete("/api/reservas/eliminar/{id}", 1))
                 .andExpect(status().isNoContent()); // validamos respuesta 204
     }
 }
