@@ -4,3 +4,7 @@ target/
 .idea/
 *.iml
 .DS_Store
+
+*.jar
+*.cmd
+.mvn/
