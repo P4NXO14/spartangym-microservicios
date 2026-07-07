@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. LA RECEPCIONISTA (Directorio)
+  # ==========================================
+  eureka-server:
+    build: ./eureka-server
+    container_name: spartan-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - spartan-net
+
+  # ==========================================
+  # 2. EL GUARDIA (Puerta de entrada)
+  # ==========================================
+  api-gateway:
+    build: ./apigateway
+    container_name: spartan-gateway
+    ports:
+      - "8090:8090"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  # ==========================================
+  # 3. LOS TRABAJADORES (Microservicios)
+  # ==========================================
+  ms-clientes:
+    build: ./clientes/clientes
+    container_name: spartan-clientes
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-reservas:
+    build: ./reservas/reservas
+    container_name: spartan-reservas
+    ports:
+      - "8081:8081"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-asistencia:
+    build: ./asistencia/asistencia
+    container_name: spartan-asistencia
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-logros:
+    build: ./logros/logros
+    container_name: spartan-logros
+    ports:
+      - "8083:8083"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-notificaciones:
+    build: ./notificaciones/notificaciones
+    container_name: spartan-notificaciones
+    ports:
+      - "8084:8084"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-productos:
+    build: ./productos/productos
+    container_name: spartan-productos
+    ports:
+      - "8085:8085"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-pagos:
+    build: ./pagos/pagos
+    container_name: spartan-pagos
+    ports:
+      - "8086:8086"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-planes:
+    build: ./planes/planes
+    container_name: spartan-planes
+    ports:
+      - "8087:8087"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+  ms-rutinas:
+    build: ./rutinas/rutinas
+    container_name: spartan-rutinas
+    ports:
+      - "8088:8088"
+    depends_on:
+      - eureka-server
+    networks:
+      - spartan-net
+
+# ==========================================
+# RED INTERNA
+# ==========================================
+networks:
+  spartan-net:
+    driver: bridge
