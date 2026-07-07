@@ -115,7 +115,31 @@ Ejemplo para clientes:
 
 ```text
 http://localhost:8080/swagger-ui/index.html
+
 ```
+## 🐳 Despliegue automatizado con Docker (Recomendado)
+
+El proyecto completo ha sido dockerizado para levantar la arquitectura de los 11 contenedores con un solo comando utilizando **Docker-Compose up --build**, asegurando el orden de inicio (Eureka -> Gateway -> Microservicios) y conectándolos mediante la red virtual `spartan-net`.
+
+**Pasos para desplegar con Docker:**
+
+1. **Compilar los microservicios:** Generar los archivos `.jar` ejecutando el siguiente comando en la terminal. 
+
+cd C:\Users\Danilo\Desktop\spartangym-microservicios
+cd clientes/clientes; .\mvnw clean package -DskipTests; cd ../..
+cd reservas/reservas; .\mvnw clean package -DskipTests; cd ../..
+cd asistencia/asistencia; .\mvnw clean package -DskipTests; cd ../..
+cd logros/logros; .\mvnw clean package -DskipTests; cd ../..
+cd notificaciones/notificaciones; .\mvnw clean package -DskipTests; cd ../..
+cd productos/productos; .\mvnw clean package -DskipTests; cd ../..
+cd pagos/pagos; .\mvnw clean package -DskipTests; cd ../..
+cd planes/planes; .\mvnw clean package -DskipTests; cd ../..
+cd rutinas/rutinas; .\mvnw clean package -DskipTests; cd ../..
+
+2. **Levantar la arquitectura:** Desde la carpeta raiz (donde se encuentra el archivo `docker-compose.yml`), ejecutar:
+   ```bash
+   docker-compose up --build
+
 
 ## Requisitos para ejecutar
 
