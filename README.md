@@ -138,7 +138,8 @@ cd rutinas/rutinas; .\mvnw clean package -DskipTests; cd ../..
 
 2. **Levantar la arquitectura:** Desde la carpeta raiz (donde se encuentra el archivo `docker-compose.yml`), ejecutar:
    ```bash
-   docker-compose up --build
+   docker-compose build --no-cache
+   docker-compose up 
 
 
 ## ⚠️ Requisitos para ejecutar
