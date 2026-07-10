@@ -125,7 +125,10 @@ El proyecto completo ha sido dockerizado para levantar la arquitectura de los 11
 
 1. **Compilar los microservicios:** Generar los archivos `.jar` ejecutando el siguiente comando en la terminal. 
 
-cd C:\Users\Danilo\Desktop\spartangym-microservicios
+ESTE COMANDO ES PARA LA TERMINAL CON "POWERSHELL"
+
+cd eureka-server; .\mvnw clean package -DskipTests; cd ..
+cd apigateway; .\mvnw clean package -DskipTests; cd ..
 cd clientes/clientes; .\mvnw clean package -DskipTests; cd ../..
 cd reservas/reservas; .\mvnw clean package -DskipTests; cd ../..
 cd asistencia/asistencia; .\mvnw clean package -DskipTests; cd ../..
@@ -136,10 +139,24 @@ cd pagos/pagos; .\mvnw clean package -DskipTests; cd ../..
 cd planes/planes; .\mvnw clean package -DskipTests; cd ../..
 cd rutinas/rutinas; .\mvnw clean package -DskipTests; cd ../..
 
+ESTE COMANDO ES PARA LA TERMINAL CON "CMD"
+
+cd eureka-server && mvnw.cmd clean package -DskipTests && cd ..
+cd apigateway && mvnw.cmd clean package -DskipTests && cd ..
+cd clientes\clientes && mvnw.cmd clean package -DskipTests && cd ..\..
+cd reservas\reservas && mvnw.cmd clean package -DskipTests && cd ..\..
+cd asistencia\asistencia && mvnw.cmd clean package -DskipTests && cd ..\..
+cd logros\logros && mvnw.cmd clean package -DskipTests && cd ..\..
+cd notificaciones\notificaciones && mvnw.cmd clean package -DskipTests && cd ..\..
+cd productos\productos && mvnw.cmd clean package -DskipTests && cd ..\..
+cd pagos\pagos && mvnw.cmd clean package -DskipTests && cd ..\..
+cd planes\planes && mvnw.cmd clean package -DskipTests && cd ..\..
+cd rutinas\rutinas && mvnw.cmd clean package -DskipTests && cd ..\..
+
 2. **Levantar la arquitectura:** Desde la carpeta raiz (donde se encuentra el archivo `docker-compose.yml`), ejecutar:
    ```bash
    docker-compose build --no-cache
-   docker-compose up 
+   docker-compose up --build
 
 
 ## ⚠️ Requisitos para ejecutar
